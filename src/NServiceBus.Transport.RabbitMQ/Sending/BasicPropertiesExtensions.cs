@@ -5,14 +5,11 @@
     using System.Globalization;
     using System.Linq;
     using System.Text;
-    using DelayedDelivery;
-    using DeliveryConstraints;
     using global::RabbitMQ.Client;
-    using Performance.TimeToBeReceived;
 
     static class BasicPropertiesExtensions
     {
-        public static void Fill(this IBasicProperties properties, OutgoingMessage message, List<DeliveryConstraint> deliveryConstraints)
+        public static void Fill(this IBasicProperties properties, OutgoingMessage message, OperationProperties operationProperties)
         {
             if (message.MessageId != null)
             {
@@ -21,7 +18,7 @@
 
             var messageHeaders = message.Headers ?? new Dictionary<string, string>();
 
-            var delayed = CalculateDelay(deliveryConstraints, out var delay);
+            var delayed = CalculateDelay(operationProperties, out var delay);
 
             properties.Persistent = !messageHeaders.Remove(UseNonPersistentDeliveryHeader);
 
@@ -32,7 +29,7 @@
                 properties.Headers[DelayInfrastructure.DelayHeader] = Convert.ToInt32(delay);
             }
 
-            if (deliveryConstraints.TryGet(out DiscardIfNotReceivedBefore timeToBeReceived) && timeToBeReceived.MaxTime < TimeSpan.MaxValue)
+            if (operationProperties.DiscardIfNotReceivedBefore != null && operationProperties.DiscardIfNotReceivedBefore.MaxTime < TimeSpan.MaxValue)
             {
                 // align with TimeoutManager behavior
                 if (delayed)
@@ -40,7 +37,7 @@
                     throw new Exception("Postponed delivery of messages with TimeToBeReceived set is not supported. Remove the TimeToBeReceived attribute to postpone messages of this type.");
                 }
 
-                properties.Expiration = timeToBeReceived.MaxTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+                properties.Expiration = operationProperties.DiscardIfNotReceivedBefore.MaxTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             }
 
             if (messageHeaders.TryGetValue(NServiceBus.Headers.CorrelationId, out var correlationId) && correlationId != null)
@@ -77,30 +74,30 @@
             }
         }
 
-        static bool CalculateDelay(List<DeliveryConstraint> deliveryConstraints, out long delay)
+        static bool CalculateDelay(OperationProperties operationProperties, out long delay)
         {
             delay = 0;
             var delayed = false;
 
-            if (deliveryConstraints.TryGet(out DoNotDeliverBefore doNotDeliverBefore))
+            if (operationProperties.DoNotDeliverBefore != null)
             {
                 delayed = true;
-                delay = Convert.ToInt64(Math.Ceiling((doNotDeliverBefore.At - DateTimeOffset.UtcNow).TotalSeconds));
+                delay = Convert.ToInt64(Math.Ceiling((operationProperties.DoNotDeliverBefore.At - DateTimeOffset.UtcNow).TotalSeconds));
 
                 if (delay > DelayInfrastructure.MaxDelayInSeconds)
                 {
-                    throw new Exception($"Message cannot be sent with {nameof(DoNotDeliverBefore)} value '{doNotDeliverBefore.At}' because it exceeds the maximum delay value '{TimeSpan.FromSeconds(DelayInfrastructure.MaxDelayInSeconds)}'.");
+                    throw new Exception($"Message cannot set to be delivered at '{operationProperties.DoNotDeliverBefore.At}' because the delay exceeds the maximum delay value '{TimeSpan.FromSeconds(DelayInfrastructure.MaxDelayInSeconds)}'.");
                 }
 
             }
-            else if (deliveryConstraints.TryGet(out DelayDeliveryWith delayDeliveryWith))
+            else if (operationProperties.DelayDeliveryWith != null)
             {
                 delayed = true;
-                delay = Convert.ToInt64(Math.Ceiling(delayDeliveryWith.Delay.TotalSeconds));
+                delay = Convert.ToInt64(Math.Ceiling(operationProperties.DelayDeliveryWith.Delay.TotalSeconds));
 
                 if (delay > DelayInfrastructure.MaxDelayInSeconds)
                 {
-                    throw new Exception($"Message cannot be sent with {nameof(DelayDeliveryWith)} value '{delayDeliveryWith.Delay}' because it exceeds the maximum delay value '{TimeSpan.FromSeconds(DelayInfrastructure.MaxDelayInSeconds)}'.");
+                    throw new Exception($"Message cannot be delayed by '{operationProperties.DelayDeliveryWith.Delay}' because it exceeds the maximum delay value '{TimeSpan.FromSeconds(DelayInfrastructure.MaxDelayInSeconds)}'.");
                 }
             }
 
@@ -119,9 +116,6 @@
             return properties.Headers.TryGetValue(ConfirmationIdHeader, out var value) &&
                 ulong.TryParse(Encoding.UTF8.GetString(value as byte[] ?? Array.Empty<byte>()), out confirmationId);
         }
-
-        static bool TryGet<T>(this List<DeliveryConstraint> list, out T constraint) where T : DeliveryConstraint =>
-            (constraint = list.OfType<T>().FirstOrDefault()) != null;
 
         public const string ConfirmationIdHeader = "NServiceBus.Transport.RabbitMQ.ConfirmationId";
         public const string UseNonPersistentDeliveryHeader = "NServiceBus.Transport.RabbitMQ.UseNonPersistentDelivery";

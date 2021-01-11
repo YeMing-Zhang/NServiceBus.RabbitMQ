@@ -19,14 +19,17 @@ class ConfigureRabbitMQTransportInfrastructure : IConfigureTransportInfrastructu
 
         if (string.IsNullOrEmpty(connectionString))
         {
-            throw new Exception("The 'RabbitMQTransport_ConnectionString' environment variable is not set.");
+            connectionString = "host=localhost";
+            //throw new Exception("The 'RabbitMQTransport_ConnectionString' environment variable is not set.");
         }
 
         connectionStringBuilder = new DbConnectionStringBuilder { ConnectionString = connectionString };
 
         queueBindings = settings.Get<QueueBindings>();
 
-        new TransportExtensions<RabbitMQTransport>(settings).UseConventionalRoutingTopology();
+        //TODO: Parse any settings in the connection string 
+        var transport = new RabbitMQTransport { Host = (string)connectionStringBuilder["Host"] };
+
         result.TransportInfrastructure = transport.Initialize(settings, connectionStringBuilder.ConnectionString);
         isTransportInitialized = true;
         result.PurgeInputQueueOnStartup = true;

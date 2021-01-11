@@ -1,4 +1,8 @@
-﻿namespace NServiceBus.Transport.RabbitMQ.Tests
+﻿using System.Data.Common;
+using System.Threading;
+using NServiceBus.Unicast.Messages;
+
+namespace NServiceBus.Transport.RabbitMQ.Tests
 {
     using System;
     using System.Collections.Concurrent;
@@ -13,53 +17,62 @@
         public virtual int MaximumConcurrency => 1;
 
         [SetUp]
-        public void SetUp()
+        public async Task SetUp()
         {
-            routingTopology = new ConventionalRoutingTopology(true);
             receivedMessages = new BlockingCollection<IncomingMessage>();
 
             var connectionString = Environment.GetEnvironmentVariable("RabbitMQTransport_ConnectionString");
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new Exception("The 'RabbitMQTransport_ConnectionString' environment variable is not set.");
+                connectionString = "host=localhost";
+                //throw new Exception("The 'RabbitMQTransport_ConnectionString' environment variable is not set.");
             }
 
-            var config = ConnectionConfiguration.Create(connectionString, ReceiverQueue);
+            var connectionStringBuilder = new DbConnectionStringBuilder { ConnectionString = connectionString };
 
-            connectionFactory = new ConnectionFactory(ReceiverQueue, config,  default, false, false, default, default);
-            channelProvider = new ChannelProvider(connectionFactory, config.RetryDelay, routingTopology);
-            channelProvider.CreateConnection();
+            //TODO: Parse any settings in the connection string 
+            var transport = new RabbitMQTransport { Host = (string)connectionStringBuilder["Host"] };
 
-            messageDispatcher = new MessageDispatcher(channelProvider);
+            connectionFactory = new ConnectionFactory(ReceiverQueue, transport.Host, transport.Port ?? 5672,
+                transport.VHost, transport.UserName, transport.Password, null, false,
+                false, transport.HeartbeatInterval, transport.NetworkRecoveryInterval);
 
-            var purger = new QueuePurger(connectionFactory);
-
-            messagePump = new MessagePump(connectionFactory, new MessageConverter(), "Unit test", channelProvider, purger, TimeSpan.FromMinutes(2), 3, 0);
-
-            routingTopology.Reset(connectionFactory, new[] { ReceiverQueue }.Concat(AdditionalReceiverQueues), new[] { ErrorQueue });
-
-            subscriptionManager = new SubscriptionManager(connectionFactory, routingTopology, ReceiverQueue);
-
-            messagePump.Init(messageContext =>
+            infra = await transport.Initialize(new HostSettings(ReceiverQueue, ReceiverQueue, new StartupDiagnosticEntries(),
+                (msg, ex) => { }, true), new[]
             {
-                receivedMessages.Add(new IncomingMessage(messageContext.MessageId, messageContext.Headers, messageContext.Body));
-                return Task.CompletedTask;
-            },
-                ErrorContext => Task.FromResult(ErrorHandleResult.Handled),
-                new CriticalError(_ => Task.CompletedTask),
-                new PushSettings(ReceiverQueue, ErrorQueue, true, TransportTransactionMode.ReceiveOnly)
-            ).GetAwaiter().GetResult();
+                new ReceiveSettings(ReceiverQueue, ReceiverQueue, true, true, "error") 
+            }, AdditionalReceiverQueues.ToArray(), CancellationToken.None);
 
-            messagePump.Start(new PushRuntimeSettings(MaximumConcurrency));
+            messageDispatcher = infra.Dispatcher;
+            messagePump = infra.GetReceiver(ReceiverQueue);
+            subscriptionManager = messagePump.Subscriptions;
+
+            await messagePump.Initialize(new PushRuntimeSettings(MaximumConcurrency),
+                messageContext =>
+                {
+                    receivedMessages.Add(new IncomingMessage(messageContext.MessageId, messageContext.Headers,
+                        messageContext.Body));
+                    return Task.CompletedTask;
+                }, ErrorContext => Task.FromResult(ErrorHandleResult.Handled), new MessageMetadata[0],
+                CancellationToken.None
+            );
+
+            await messagePump.StartReceive(CancellationToken.None);
         }
 
         [TearDown]
-        public void TearDown()
+        public async Task TearDown()
         {
-            messagePump?.Stop().GetAwaiter().GetResult();
+            if (messagePump != null)
+            {
+                await messagePump.StopReceive(CancellationToken.None);
+            }
 
-            channelProvider?.Dispose();
+            if (infra != null)
+            {
+                await infra.DisposeAsync();
+            }
         }
 
         protected bool TryWaitForMessageReceipt() => TryReceiveMessage(out var _, incomingMessageTimeout);
@@ -81,15 +94,14 @@
 
         protected const string ReceiverQueue = "testreceiver";
         protected const string ErrorQueue = "error";
-        protected MessageDispatcher messageDispatcher;
         protected ConnectionFactory connectionFactory;
-        protected MessagePump messagePump;
-        protected SubscriptionManager subscriptionManager;
+        protected IMessageDispatcher messageDispatcher;
+        protected IMessageReceiver messagePump;
+        protected ISubscriptionManager subscriptionManager;
 
-        ChannelProvider channelProvider;
         BlockingCollection<IncomingMessage> receivedMessages;
-        ConventionalRoutingTopology routingTopology;
 
         static readonly TimeSpan incomingMessageTimeout = TimeSpan.FromSeconds(1);
+        TransportInfrastructure infra;
     }
 }
