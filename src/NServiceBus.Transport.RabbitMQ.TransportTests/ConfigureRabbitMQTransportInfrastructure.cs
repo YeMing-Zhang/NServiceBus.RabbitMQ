@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Data.Common;
-using System.Linq;
 using System.Threading.Tasks;
 using NServiceBus;
-using NServiceBus.Settings;
 using NServiceBus.Transport;
 using NServiceBus.TransportTests;
 using RabbitMQ.Client;
 
 class ConfigureRabbitMQTransportInfrastructure : IConfigureTransportInfrastructure
 {
-    public TransportConfigurationResult Configure(SettingsHolder settings, TransportTransactionMode transactionMode)
+    public async Task<TransportConfigurationResult> Configure(HostSettings hostSettings, string inputQueueName, string errorQueueName,
+        TransportTransactionMode transactionMode)
     {
-        var result = new TransportConfigurationResult();
-        var transport = new RabbitMQTransport();
-
         var connectionString = Environment.GetEnvironmentVariable("RabbitMQTransport_ConnectionString");
 
         if (string.IsNullOrEmpty(connectionString))
@@ -23,34 +19,34 @@ class ConfigureRabbitMQTransportInfrastructure : IConfigureTransportInfrastructu
             //throw new Exception("The 'RabbitMQTransport_ConnectionString' environment variable is not set.");
         }
 
-        connectionStringBuilder = new DbConnectionStringBuilder { ConnectionString = connectionString };
+        queuesToCleanUp = new[] { inputQueueName, errorQueueName };
 
-        queueBindings = settings.Get<QueueBindings>();
+        connectionStringBuilder = new DbConnectionStringBuilder { ConnectionString = connectionString };
 
         //TODO: Parse any settings in the connection string 
         var transport = new RabbitMQTransport { Host = (string)connectionStringBuilder["Host"] };
 
-        result.TransportInfrastructure = transport.Initialize(settings, connectionStringBuilder.ConnectionString);
-        isTransportInitialized = true;
-        result.PurgeInputQueueOnStartup = true;
+        var mainReceiverSettings = new ReceiveSettings(
+            "mainReceiver",
+            inputQueueName,
+            transport.SupportsPublishSubscribe,
+            true, errorQueueName);
 
-        transportTransactionMode = result.TransportInfrastructure.TransactionMode;
-        requestedTransactionMode = transactionMode;
-
-        return result;
+        return new TransportConfigurationResult
+        {
+            TransportDefinition = transport,
+            TransportInfrastructure = await transport.Initialize(hostSettings, new[] { mainReceiverSettings }, new[] { errorQueueName }),
+            PurgeInputQueueOnStartup = true
+        };
     }
 
     public Task Cleanup()
     {
-        if (isTransportInitialized && transportTransactionMode >= requestedTransactionMode)
-        {
-            PurgeQueues(connectionStringBuilder, queueBindings);
-        }
-
+        PurgeQueues(connectionStringBuilder, queuesToCleanUp);
         return Task.FromResult(0);
     }
 
-    static void PurgeQueues(DbConnectionStringBuilder connectionStringBuilder, QueueBindings queueBindings)
+    static void PurgeQueues(DbConnectionStringBuilder connectionStringBuilder, string[] queues)
     {
         if (connectionStringBuilder == null)
         {
@@ -87,8 +83,6 @@ class ConfigureRabbitMQTransportInfrastructure : IConfigureTransportInfrastructu
             throw new Exception("The connection string doesn't contain a value for 'host'.");
         }
 
-        var queues = queueBindings.ReceivingAddresses.Concat(queueBindings.SendingAddresses);
-
         using (var connection = connectionFactory.CreateConnection("Test Queue Purger"))
         using (var channel = connection.CreateModel())
         {
@@ -106,9 +100,6 @@ class ConfigureRabbitMQTransportInfrastructure : IConfigureTransportInfrastructu
         }
     }
 
+    string[] queuesToCleanUp;
     DbConnectionStringBuilder connectionStringBuilder;
-    QueueBindings queueBindings;
-    TransportTransactionMode transportTransactionMode;
-    TransportTransactionMode requestedTransactionMode;
-    bool isTransportInitialized;
 }
