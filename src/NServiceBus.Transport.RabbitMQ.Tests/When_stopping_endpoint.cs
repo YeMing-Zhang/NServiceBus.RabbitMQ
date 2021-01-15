@@ -19,7 +19,7 @@ namespace NServiceBus.Transport.RabbitMQ.Tests
 
             await messagePump.StartReceive();
             await Task.Delay(500);
-            await messagePump.StopReceive(CancellationToken.None);
+            await messagePump.StopReceive();
         }
     }
 }

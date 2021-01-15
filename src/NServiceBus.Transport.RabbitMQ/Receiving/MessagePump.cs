@@ -61,8 +61,7 @@ namespace NServiceBus.Transport.RabbitMQ
         public string Id => settings.Id;
 
         public Task Initialize(PushRuntimeSettings limitations, Func<MessageContext, Task> onMessage,
-            Func<ErrorContext, Task<ErrorHandleResult>> onError, IReadOnlyCollection<MessageMetadata> events,
-            CancellationToken cancellationToken = new CancellationToken())
+            Func<ErrorContext, Task<ErrorHandleResult>> onError, IReadOnlyCollection<MessageMetadata> events)
         {
             this.onMessage = onMessage;
             this.onError = onError;
@@ -77,7 +76,7 @@ namespace NServiceBus.Transport.RabbitMQ
             return Task.CompletedTask;
         }
 
-        public Task StartReceive(CancellationToken cancellationToken = new CancellationToken())
+        public Task StartReceive()
         {
             messageProcessing = new CancellationTokenSource();
 
@@ -107,7 +106,7 @@ namespace NServiceBus.Transport.RabbitMQ
             return Task.CompletedTask;
         }
 
-        public async Task StopReceive(CancellationToken cancellationToken = new CancellationToken())
+        public async Task StopReceive()
         {
             consumer.Received -= Consumer_Received;
             messageProcessing.Cancel();

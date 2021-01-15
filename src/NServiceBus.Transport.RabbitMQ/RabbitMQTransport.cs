@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.Client.Events;
 
 namespace NServiceBus
 {
-    using Settings;
     using Transport.RabbitMQ;
     using Transport;
 
@@ -168,7 +166,7 @@ namespace NServiceBus
         /// Creates new instance of the RabbitMQ transport.
         /// </summary>
         public RabbitMQTransport(string connectionString) 
-            : base(TransportTransactionMode.ReceiveOnly)
+            : base(TransportTransactionMode.ReceiveOnly, true, true, true)
         {
             var connectionStringParams = AmqpConnectionString.Parse(connectionString);
             Host = connectionStringParams.Host;
@@ -182,7 +180,7 @@ namespace NServiceBus
         /// Creates new instance of the RabbitMQ transport.
         /// </summary>
         public RabbitMQTransport()
-            : base(TransportTransactionMode.ReceiveOnly)
+            : base(TransportTransactionMode.ReceiveOnly, true, true, true)
         {
         }
        
@@ -198,8 +196,7 @@ namespace NServiceBus
         /// default capabilities as well as for initializing the transport's configuration based on those settings (the user cannot
         /// provide information anymore at this stage).
         /// </summary>
-        public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses,
-            CancellationToken cancellationToken = new CancellationToken())
+        public override async Task<TransportInfrastructure> Initialize(HostSettings hostSettings, ReceiveSettings[] receivers, string[] sendingAddresses)
         {
             X509Certificate2Collection certCollection = null;
             if (ClientCertificate != null)
@@ -246,6 +243,8 @@ namespace NServiceBus
 
         int DefaultPort => ClientCertificate != null ? 5671 : 5672;
 
+       
+
         /// <summary>
         /// Translates a <see cref="T:NServiceBus.Transport.QueueAddress" /> object into a transport specific queue address-string.
         /// </summary>
@@ -267,20 +266,5 @@ namespace NServiceBus
         /// Returns a list of all supported transaction modes of this transport.
         /// </summary>
         public override IReadOnlyCollection<TransportTransactionMode> GetSupportedTransactionModes() => supportedTransactionModes;
-
-        /// <summary>
-        /// Indicates whether this transport supports delayed delivery natively.
-        /// </summary>
-        public override bool SupportsDelayedDelivery => true;
-
-        /// <summary>
-        /// Indicates whether this transport supports publish-subscribe natively.
-        /// </summary>
-        public override bool SupportsPublishSubscribe => true;
-
-        /// <summary>
-        /// Indicates whether this transport supports time-to-be-received settings for messages.
-        /// </summary>
-        public override bool SupportsTTBR => true;
     }
 }

@@ -42,7 +42,7 @@ namespace NServiceBus.Transport.RabbitMQ.Tests
                 (msg, ex) => { }, true), new[]
             {
                 new ReceiveSettings(ReceiverQueue, ReceiverQueue, true, true, "error") 
-            }, AdditionalReceiverQueues.ToArray(), CancellationToken.None);
+            }, AdditionalReceiverQueues.ToArray());
 
             messageDispatcher = infra.Dispatcher;
             messagePump = infra.GetReceiver(ReceiverQueue);
@@ -54,11 +54,10 @@ namespace NServiceBus.Transport.RabbitMQ.Tests
                     receivedMessages.Add(new IncomingMessage(messageContext.MessageId, messageContext.Headers,
                         messageContext.Body));
                     return Task.CompletedTask;
-                }, ErrorContext => Task.FromResult(ErrorHandleResult.Handled), new MessageMetadata[0],
-                CancellationToken.None
+                }, ErrorContext => Task.FromResult(ErrorHandleResult.Handled), new MessageMetadata[0]
             );
 
-            await messagePump.StartReceive(CancellationToken.None);
+            await messagePump.StartReceive();
         }
 
         [TearDown]
@@ -66,7 +65,7 @@ namespace NServiceBus.Transport.RabbitMQ.Tests
         {
             if (messagePump != null)
             {
-                await messagePump.StopReceive(CancellationToken.None);
+                await messagePump.StopReceive();
             }
 
             if (infra != null)

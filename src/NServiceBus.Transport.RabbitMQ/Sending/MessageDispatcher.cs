@@ -14,7 +14,7 @@ namespace NServiceBus.Transport.RabbitMQ
             this.channelProvider = channelProvider;
         }
 
-        public Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction, CancellationToken cancellationToken = new CancellationToken())
+        public Task Dispatch(TransportOperations outgoingMessages, TransportTransaction transaction)
         {
             var channel = channelProvider.GetPublishChannel();
 

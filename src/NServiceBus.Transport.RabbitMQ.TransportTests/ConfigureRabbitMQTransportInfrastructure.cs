@@ -8,8 +8,7 @@ using RabbitMQ.Client;
 
 class ConfigureRabbitMQTransportInfrastructure : IConfigureTransportInfrastructure
 {
-    public async Task<TransportConfigurationResult> Configure(HostSettings hostSettings, string inputQueueName, string errorQueueName,
-        TransportTransactionMode transactionMode)
+    public TransportDefinition CreateTransportDefinition()
     {
         var connectionString = Environment.GetEnvironmentVariable("RabbitMQTransport_ConnectionString");
 
@@ -19,25 +18,26 @@ class ConfigureRabbitMQTransportInfrastructure : IConfigureTransportInfrastructu
             //throw new Exception("The 'RabbitMQTransport_ConnectionString' environment variable is not set.");
         }
 
-        queuesToCleanUp = new[] { inputQueueName, errorQueueName };
-
         connectionStringBuilder = new DbConnectionStringBuilder { ConnectionString = connectionString };
 
         //TODO: Parse any settings in the connection string 
         var transport = new RabbitMQTransport { Host = (string)connectionStringBuilder["Host"] };
 
+        return transport;
+    }
+
+    public Task<TransportInfrastructure> Configure(TransportDefinition transportDefinition, HostSettings hostSettings, string inputQueueName,
+        string errorQueueName)
+    {
+        queuesToCleanUp = new[] { inputQueueName, errorQueueName };
+
         var mainReceiverSettings = new ReceiveSettings(
             "mainReceiver",
             inputQueueName,
-            transport.SupportsPublishSubscribe,
+            true,
             true, errorQueueName);
 
-        return new TransportConfigurationResult
-        {
-            TransportDefinition = transport,
-            TransportInfrastructure = await transport.Initialize(hostSettings, new[] { mainReceiverSettings }, new[] { errorQueueName }),
-            PurgeInputQueueOnStartup = true
-        };
+        return transportDefinition.Initialize(hostSettings, new[] {mainReceiverSettings}, new[] {errorQueueName});
     }
 
     public Task Cleanup()
