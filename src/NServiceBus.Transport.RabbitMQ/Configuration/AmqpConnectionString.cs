@@ -4,58 +4,44 @@ namespace NServiceBus.Transport.RabbitMQ
 {
     class AmqpConnectionString
     {
-        public string Host { get; }
-        public int Port { get; }
-        public bool UseTls { get; }
-        public string UserName { get; }
-        public string Password { get; }
-        public string VHost { get; }
-
-        AmqpConnectionString(string host, int port, bool useTls, string userName, string password, string vhost)
+        public static Action<RabbitMQTransport> Parse(string connectionString)
         {
-            Host = host;
-            Port = port;
-            UseTls = useTls;
-            UserName = userName;
-            Password = password;
-            VHost = vhost;
-        }
-
-        public static AmqpConnectionString Parse(string connectionString)
-        {
-            var uri = new Uri(connectionString);
-
-            var useTls = string.Equals("amqps", uri.Scheme, StringComparison.OrdinalIgnoreCase);
-            string userName = null;
-            string password = null;
-            string vhost = null;
-
-            if (!string.IsNullOrEmpty(uri.UserInfo))
+            return transport =>
             {
-                var userPass = uri.UserInfo.Split(':');
-                if (userPass.Length > 2)
+                var uri = new Uri(connectionString);
+
+                transport.Host = uri.Host;
+
+                if (!uri.IsDefaultPort)
                 {
-                    throw new Exception($"Invalid user information: {uri.UserInfo}. Expected user and password separated by a colon.");
+                    transport.Port = uri.Port;
                 }
 
-                userName = UriDecode(userPass[0]);
-                if (userPass.Length == 2)
+                if (!string.IsNullOrEmpty(uri.UserInfo))
                 {
-                    password = UriDecode(userPass[1]);
+                    var userPass = uri.UserInfo.Split(':');
+                    if (userPass.Length > 2)
+                    {
+                        throw new Exception($"Invalid user information: {uri.UserInfo}. Expected user and password separated by a colon.");
+                    }
+
+                    transport.UserName = UriDecode(userPass[0]);
+                    if (userPass.Length == 2)
+                    {
+                        transport.Password = UriDecode(userPass[1]);
+                    }
                 }
-            }
 
-            if (uri.Segments.Length > 2)
-            {
-                throw new Exception($"Multiple segments are not allowed in the path of an AMQP URI: {string.Join(", ", uri.Segments)}");
-            }
+                if (uri.Segments.Length > 2)
+                {
+                    throw new Exception($"Multiple segments are not allowed in the path of an AMQP URI: {string.Join(", ", uri.Segments)}");
+                }
 
-            if (uri.Segments.Length == 2)
-            {
-                vhost = UriDecode(uri.Segments[1]);
-            }
-
-            return new AmqpConnectionString(uri.Host, uri.Port, useTls, userName, password, vhost);
+                if (uri.Segments.Length == 2)
+                {
+                    transport.VHost = UriDecode(uri.Segments[1]);
+                }
+            };
         }
 
         static string UriDecode(string value)

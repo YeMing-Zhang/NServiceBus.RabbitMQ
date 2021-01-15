@@ -168,12 +168,14 @@ namespace NServiceBus
         public RabbitMQTransport(string connectionString) 
             : base(TransportTransactionMode.ReceiveOnly, true, true, true)
         {
-            var connectionStringParams = AmqpConnectionString.Parse(connectionString);
-            Host = connectionStringParams.Host;
-            Port = connectionStringParams.Port;
-            UserName = connectionStringParams.UserName;
-            Password = connectionStringParams.Password;
-            VHost = connectionStringParams.VHost;
+            if (connectionString.StartsWith("amqp", StringComparison.OrdinalIgnoreCase))
+            {
+                AmqpConnectionString.Parse(connectionString)(this);
+            }
+            else
+            {
+                NServiceBusConnectionString.Parse(connectionString)(this);
+            }
         }
 
         /// <summary>
@@ -183,12 +185,6 @@ namespace NServiceBus
             : base(TransportTransactionMode.ReceiveOnly, true, true, true)
         {
         }
-       
-        //public RabbitMQTransport(string host) 
-        //    : base(TransportTransactionMode.ReceiveOnly)
-        //{
-        //    Host = host;
-        //}
 
         /// <summary>
         /// Initializes all the factories and supported features for the transport. This method is called right before all features
