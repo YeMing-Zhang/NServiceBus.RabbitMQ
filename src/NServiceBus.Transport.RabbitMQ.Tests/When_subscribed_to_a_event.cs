@@ -152,7 +152,7 @@ namespace NServiceBus.Transport.RabbitMQ.Tests
             await Unsubscribe<CombinedClassAndInterface>();
         }
 
-        Task Subscribe<T>() => subscriptionManager.Subscribe(new MessageMetadata(typeof(T)), new ContextBag());
+        Task Subscribe<T>() => subscriptionManager.SubscribeAll(new[] { new MessageMetadata(typeof(T))}, new ContextBag());
         Task Unsubscribe<T>() => subscriptionManager.Unsubscribe(new MessageMetadata(typeof(T)), new ContextBag());
 
         Task Publish<T>()

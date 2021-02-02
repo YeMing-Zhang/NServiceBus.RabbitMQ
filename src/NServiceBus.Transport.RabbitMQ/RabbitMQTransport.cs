@@ -215,7 +215,7 @@ namespace NServiceBus
                 await CreateQueueIfNecessary(receivingAddresses, sendingAddresses, connectionFactory).ConfigureAwait(false);
             }
 
-            return new RabbitMQTransportInfrastructure(hostSettings, receivers, sendingAddresses, connectionFactory,
+            return new RabbitMQTransportInfrastructure(hostSettings, receivers, connectionFactory,
                     routingTopology, channelProvider, converter, TimeToWaitBeforeTriggeringCircuitBreaker, PrefetchCountCalculation);
         }
 

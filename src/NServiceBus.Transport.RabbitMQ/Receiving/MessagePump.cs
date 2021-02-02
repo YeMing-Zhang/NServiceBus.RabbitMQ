@@ -60,8 +60,7 @@ namespace NServiceBus.Transport.RabbitMQ
         public ISubscriptionManager Subscriptions { get; }
         public string Id => settings.Id;
 
-        public Task Initialize(PushRuntimeSettings limitations, Func<MessageContext, Task> onMessage,
-            Func<ErrorContext, Task<ErrorHandleResult>> onError, IReadOnlyCollection<MessageMetadata> events)
+        public Task Initialize(PushRuntimeSettings limitations, Func<MessageContext, Task> onMessage, Func<ErrorContext, Task<ErrorHandleResult>> onError)
         {
             this.onMessage = onMessage;
             this.onError = onError;

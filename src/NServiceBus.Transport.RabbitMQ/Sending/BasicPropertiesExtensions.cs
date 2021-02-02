@@ -9,7 +9,7 @@
 
     static class BasicPropertiesExtensions
     {
-        public static void Fill(this IBasicProperties properties, OutgoingMessage message, OperationProperties operationProperties)
+        public static void Fill(this IBasicProperties properties, OutgoingMessage message, DispatchProperties dispatchProperties)
         {
             if (message.MessageId != null)
             {
@@ -18,7 +18,7 @@
 
             var messageHeaders = message.Headers ?? new Dictionary<string, string>();
 
-            var delayed = CalculateDelay(operationProperties, out var delay);
+            var delayed = CalculateDelay(dispatchProperties, out var delay);
 
             properties.Persistent = !messageHeaders.Remove(UseNonPersistentDeliveryHeader);
 
@@ -29,7 +29,7 @@
                 properties.Headers[DelayInfrastructure.DelayHeader] = Convert.ToInt32(delay);
             }
 
-            if (operationProperties.DiscardIfNotReceivedBefore != null && operationProperties.DiscardIfNotReceivedBefore.MaxTime < TimeSpan.MaxValue)
+            if (dispatchProperties.DiscardIfNotReceivedBefore != null && dispatchProperties.DiscardIfNotReceivedBefore.MaxTime < TimeSpan.MaxValue)
             {
                 // align with TimeoutManager behavior
                 if (delayed)
@@ -37,7 +37,7 @@
                     throw new Exception("Postponed delivery of messages with TimeToBeReceived set is not supported. Remove the TimeToBeReceived attribute to postpone messages of this type.");
                 }
 
-                properties.Expiration = operationProperties.DiscardIfNotReceivedBefore.MaxTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+                properties.Expiration = dispatchProperties.DiscardIfNotReceivedBefore.MaxTime.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
             }
 
             if (messageHeaders.TryGetValue(NServiceBus.Headers.CorrelationId, out var correlationId) && correlationId != null)
@@ -74,30 +74,30 @@
             }
         }
 
-        static bool CalculateDelay(OperationProperties operationProperties, out long delay)
+        static bool CalculateDelay(DispatchProperties dispatchProperties, out long delay)
         {
             delay = 0;
             var delayed = false;
 
-            if (operationProperties.DoNotDeliverBefore != null)
+            if (dispatchProperties.DoNotDeliverBefore != null)
             {
                 delayed = true;
-                delay = Convert.ToInt64(Math.Ceiling((operationProperties.DoNotDeliverBefore.At - DateTimeOffset.UtcNow).TotalSeconds));
+                delay = Convert.ToInt64(Math.Ceiling((dispatchProperties.DoNotDeliverBefore.At - DateTimeOffset.UtcNow).TotalSeconds));
 
                 if (delay > DelayInfrastructure.MaxDelayInSeconds)
                 {
-                    throw new Exception($"Message cannot set to be delivered at '{operationProperties.DoNotDeliverBefore.At}' because the delay exceeds the maximum delay value '{TimeSpan.FromSeconds(DelayInfrastructure.MaxDelayInSeconds)}'.");
+                    throw new Exception($"Message cannot set to be delivered at '{dispatchProperties.DoNotDeliverBefore.At}' because the delay exceeds the maximum delay value '{TimeSpan.FromSeconds(DelayInfrastructure.MaxDelayInSeconds)}'.");
                 }
 
             }
-            else if (operationProperties.DelayDeliveryWith != null)
+            else if (dispatchProperties.DelayDeliveryWith != null)
             {
                 delayed = true;
-                delay = Convert.ToInt64(Math.Ceiling(operationProperties.DelayDeliveryWith.Delay.TotalSeconds));
+                delay = Convert.ToInt64(Math.Ceiling(dispatchProperties.DelayDeliveryWith.Delay.TotalSeconds));
 
                 if (delay > DelayInfrastructure.MaxDelayInSeconds)
                 {
-                    throw new Exception($"Message cannot be delayed by '{operationProperties.DelayDeliveryWith.Delay}' because it exceeds the maximum delay value '{TimeSpan.FromSeconds(DelayInfrastructure.MaxDelayInSeconds)}'.");
+                    throw new Exception($"Message cannot be delayed by '{dispatchProperties.DelayDeliveryWith.Delay}' because it exceeds the maximum delay value '{TimeSpan.FromSeconds(DelayInfrastructure.MaxDelayInSeconds)}'.");
                 }
             }
 

@@ -71,12 +71,12 @@
                         try
                         {
                             var outgoingMessage = new OutgoingMessage("Foo", new Dictionary<string, string>(), new byte[0]);
-                            var props = new OperationProperties
+                            var props = new DispatchProperties
                             {
                                 DiscardIfNotReceivedBefore =
                                     new DiscardIfNotReceivedBefore(TimeSpan.FromMilliseconds(-1))
                             };
-                            var operation = new TransportOperation(outgoingMessage, new UnicastAddressTag(settings.EndpointName()), props.ToDictionary());
+                            var operation = new TransportOperation(outgoingMessage, new UnicastAddressTag(settings.EndpointName()), props);
                             await sender.Dispatch(new TransportOperations(operation), new TransportTransaction());
                         }
                         catch (Exception)

@@ -19,14 +19,16 @@ namespace NServiceBus.Transport.RabbitMQ
             this.localQueue = localQueue;
         }
 
-        public Task Subscribe(MessageMetadata eventType, ContextBag context)
+        public Task SubscribeAll(MessageMetadata[] eventTypes, ContextBag context)
         {
             using (var connection = connectionFactory.CreateAdministrationConnection())
             using (var channel = connection.CreateModel())
             {
-                routingTopology.SetupSubscription(channel, eventType, localQueue);
+                foreach (var eventType in eventTypes)
+                {
+                    routingTopology.SetupSubscription(channel, eventType, localQueue);
+                }
             }
-
             return Task.CompletedTask;
         }
 

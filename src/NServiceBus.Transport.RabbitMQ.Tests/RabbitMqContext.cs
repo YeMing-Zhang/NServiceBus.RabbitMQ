@@ -54,7 +54,7 @@ namespace NServiceBus.Transport.RabbitMQ.Tests
                     receivedMessages.Add(new IncomingMessage(messageContext.MessageId, messageContext.Headers,
                         messageContext.Body));
                     return Task.CompletedTask;
-                }, ErrorContext => Task.FromResult(ErrorHandleResult.Handled), new MessageMetadata[0]
+                }, ErrorContext => Task.FromResult(ErrorHandleResult.Handled)
             );
 
             await messagePump.StartReceive();

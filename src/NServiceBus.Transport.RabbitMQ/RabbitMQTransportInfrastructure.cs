@@ -10,8 +10,7 @@
         readonly ChannelProvider channelProvider;
         IRoutingTopology routingTopology;
 
-        public RabbitMQTransportInfrastructure(HostSettings hostSettings, ReceiveSettings[] receiverSettings,
-            string[] sendingAddresses, ConnectionFactory connectionFactory, IRoutingTopology routingTopology,
+        public RabbitMQTransportInfrastructure(HostSettings hostSettings, ReceiveSettings[] receiverSettings, ConnectionFactory connectionFactory, IRoutingTopology routingTopology,
             ChannelProvider channelProvider, MessageConverter messageConverter,
             TimeSpan timeToWaitBeforeTriggeringCircuitBreaker, Func<int, int> prefetchCountCalculation)
         {
