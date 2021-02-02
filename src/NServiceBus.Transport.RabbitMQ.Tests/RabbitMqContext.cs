@@ -25,14 +25,10 @@ namespace NServiceBus.Transport.RabbitMQ.Tests
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                connectionString = "host=localhost";
-                //throw new Exception("The 'RabbitMQTransport_ConnectionString' environment variable is not set.");
+                throw new Exception("The 'RabbitMQTransport_ConnectionString' environment variable is not set.");
             }
 
-            var connectionStringBuilder = new DbConnectionStringBuilder { ConnectionString = connectionString };
-
-            //TODO: Parse any settings in the connection string 
-            var transport = new RabbitMQTransport { Host = (string)connectionStringBuilder["Host"] };
+            var transport = new RabbitMQTransport(connectionString);
 
             connectionFactory = new ConnectionFactory(ReceiverQueue, transport.Host, transport.Port ?? 5672,
                 transport.VHost, transport.UserName, transport.Password, null, false,

@@ -16,14 +16,13 @@ class ConfigureEndpointRabbitMQTransport : IConfigureEndpointTestExecution
 
         if (string.IsNullOrEmpty(connectionString))
         {
-            connectionString = "host=localhost";
-            //throw new Exception("The 'RabbitMQTransport_ConnectionString' environment variable is not set.");
+            throw new Exception("The 'RabbitMQTransport_ConnectionString' environment variable is not set.");
         }
 
+        //For cleanup
         connectionStringBuilder = new DbConnectionStringBuilder { ConnectionString = connectionString };
 
-        //TODO: Parse any settings in the connection string 
-        var transport = new RabbitMQTransport {Host = (string) connectionStringBuilder["Host"] };
+        var transport = new RabbitMQTransport(connectionString);
         transport.RoutingTopology = new ConventionalRoutingTopology(true, t => t.FullName); //distinguish nested types
         configuration.UseTransport(transport);
 

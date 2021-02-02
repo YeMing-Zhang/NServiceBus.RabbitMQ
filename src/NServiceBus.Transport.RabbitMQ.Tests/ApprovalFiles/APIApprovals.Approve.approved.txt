@@ -15,16 +15,13 @@ namespace NServiceBus
         public int? Port { get; set; }
         public System.Func<int, int> PrefetchCountCalculation { get; set; }
         public NServiceBus.Transport.RabbitMQ.IRoutingTopology RoutingTopology { get; set; }
-        public override bool SupportsDelayedDelivery { get; }
-        public override bool SupportsPublishSubscribe { get; }
-        public override bool SupportsTTBR { get; }
         public System.TimeSpan TimeToWaitBeforeTriggeringCircuitBreaker { get; set; }
         public bool UseExternalAuthMechanism { get; set; }
         public string UserName { get; set; }
         public string VHost { get; set; }
         public bool ValidateRemoteCertificate { get; set; }
         public override System.Collections.Generic.IReadOnlyCollection<NServiceBus.TransportTransactionMode> GetSupportedTransactionModes() { }
-        public override System.Threading.Tasks.Task<NServiceBus.Transport.TransportInfrastructure> Initialize(NServiceBus.Transport.HostSettings hostSettings, NServiceBus.Transport.ReceiveSettings[] receivers, string[] sendingAddresses, System.Threading.CancellationToken cancellationToken = default) { }
+        public override System.Threading.Tasks.Task<NServiceBus.Transport.TransportInfrastructure> Initialize(NServiceBus.Transport.HostSettings hostSettings, NServiceBus.Transport.ReceiveSettings[] receivers, string[] sendingAddresses) { }
         public override string ToTransportAddress(NServiceBus.Transport.QueueAddress address) { }
     }
     public static class RabbitMQTransportOptionsExtensions

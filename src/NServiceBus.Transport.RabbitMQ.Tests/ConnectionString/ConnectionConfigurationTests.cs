@@ -9,7 +9,7 @@
     {
         const string connectionString =
             "virtualHost=Copa;username=Copa;host=192.168.1.1:1234;password=abc_xyz;port=12345;requestedHeartbeat=3;" +
-            "retryDelay=01:02:03;useTls=true;certPath=/path/to/client/keycert.p12;certPassPhrase=abc123";
+            "retryDelay=01:02:03;useTls=true;certPath=..\\..\\..\\myp12.p12;certPassPhrase=abc123";
 
         RabbitMQTransport CreateTransportDefinition(string connectionString)
         {
