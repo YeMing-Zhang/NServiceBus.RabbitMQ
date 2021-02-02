@@ -10,7 +10,6 @@ namespace NServiceBus.Transport.RabbitMQ.Tests
     using System.Linq;
     using System.Threading.Tasks;
     using NUnit.Framework;
-    using Support;
 
     class RabbitMqContext
     {
@@ -31,7 +30,7 @@ namespace NServiceBus.Transport.RabbitMQ.Tests
             var transport = new RabbitMQTransport(connectionString);
 
             connectionFactory = new ConnectionFactory(ReceiverQueue, transport.Host, transport.Port ?? 5672,
-                transport.VHost, transport.UserName, transport.Password, null, false,
+                transport.VHost, transport.UserName, transport.Password, false, null, false,
                 false, transport.HeartbeatInterval, transport.NetworkRecoveryInterval);
 
             infra = await transport.Initialize(new HostSettings(ReceiverQueue, ReceiverQueue, new StartupDiagnosticEntries(),

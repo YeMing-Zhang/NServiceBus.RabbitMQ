@@ -122,6 +122,11 @@ namespace NServiceBus
         }
 
         /// <summary>
+        /// Configures if the client should use TLS-secured connection.
+        /// </summary>
+        public bool UseTLS { get; set; }
+
+        /// <summary>
         /// The certificate to use for client authentication when connecting to the broker via TLS.
         /// </summary>
         public X509Certificate2 ClientCertificate { get; set; }
@@ -201,7 +206,7 @@ namespace NServiceBus
             }
 
             var connectionFactory = new ConnectionFactory(hostSettings.Name, Host, Port ?? DefaultPort,
-                VHost, UserName, Password, certCollection, ValidateRemoteCertificate,
+                VHost, UserName, Password, UseTLS, certCollection, ValidateRemoteCertificate,
                 UseExternalAuthMechanism, HeartbeatInterval, NetworkRecoveryInterval);
 
             var channelProvider = new ChannelProvider(connectionFactory, NetworkRecoveryInterval, routingTopology);
@@ -237,7 +242,7 @@ namespace NServiceBus
             return Task.CompletedTask;
         }
 
-        int DefaultPort => ClientCertificate != null ? 5671 : 5672;
+        int DefaultPort => UseTLS ? 5671 : 5672;
 
        
 

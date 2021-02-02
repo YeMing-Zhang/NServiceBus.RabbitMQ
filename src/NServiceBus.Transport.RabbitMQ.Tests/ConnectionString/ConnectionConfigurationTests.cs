@@ -28,11 +28,7 @@
             Assert.AreEqual(connectionConfiguration.Password, "abc_xyz");
             Assert.AreEqual(connectionConfiguration.HeartbeatInterval, TimeSpan.FromSeconds(3));
             Assert.AreEqual(connectionConfiguration.NetworkRecoveryInterval, new TimeSpan(1, 2, 3)); //01:02:03
-
-            //TODO: TLS
-            //Assert.AreEqual(connectionConfiguration.UseTls, true);
-            //Assert.AreEqual(connectionConfiguration.CertPath, "/path/to/client/keycert.p12");
-            //Assert.AreEqual(connectionConfiguration.CertPassphrase, "abc123");
+            Assert.AreEqual("O=Particular, S=Some-State, C=PL", connectionConfiguration.ClientCertificate.Issuer);
         }
 
         [Test]
@@ -123,30 +119,21 @@
             Assert.AreEqual("myVirtualHost", connectionConfiguration.VHost);
         }
 
-        //TODO TLS
-        //[Test]
-        //public void Should_parse_use_tls()
-        //{
-        //    var connectionConfiguration = CreateTransportDefinition("host=localhost;useTls=true");
+        [Test]
+        public void Should_parse_use_tls()
+        {
+            var connectionConfiguration = CreateTransportDefinition("host=localhost;useTls=true");
 
-        //    Assert.AreEqual(true, connectionConfiguration.UseTls);
-        //    Assert.AreEqual(5671, connectionConfiguration.Port);
-        //}
-        //[Test]
-        //public void Should_parse_the_cert_path()
-        //{
-        //    var connectionConfiguration = CreateTransportDefinition("host=localhost;certPath=/path/keyfile.p12");
+            Assert.AreEqual(true, connectionConfiguration.UseTLS);
+        }
+        [Test]
+        public void Should_parse_the_cert_path()
+        {
+            var connectionConfiguration = CreateTransportDefinition("host=localhost;certPath=..\\..\\..\\myp12.p12;certPassphrase=abc123");
 
-        //    Assert.AreEqual("/path/keyfile.p12", connectionConfiguration.CertPath);
-        //}
+            Assert.AreEqual("O=Particular, S=Some-State, C=PL", connectionConfiguration.ClientCertificate.Issuer);
+        }
 
-        //[Test]
-        //public void Should_parse_the_cert_passphrase()
-        //{
-        //    var connectionConfiguration = ConnectionConfiguration.Create("host=localhost;certPassphrase=abc123", endpointName);
-
-        //    Assert.AreEqual("abc123", connectionConfiguration.CertPassphrase);
-        //}
         [Test]
         public void Should_throw_on_malformed_string()
         {

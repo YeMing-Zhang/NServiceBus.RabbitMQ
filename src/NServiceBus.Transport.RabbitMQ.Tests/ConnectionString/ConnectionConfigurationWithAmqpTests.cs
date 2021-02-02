@@ -32,16 +32,15 @@
             Assert.Throws<UriFormatException>(() => CreateTransportDefinition("amqp://:1234/"));
         }
 
-        //TODO: TLS
-        //[TestCase("amqp", 5672U, false)]
-        //[TestCase("amqps", 5671U, true)]
-        //public void Should_determine_if_tls_should_be_used_from_connection_string(string scheme, uint port, bool useTls)
-        //{
-        //    var connectionConfiguration = CreateTransportDefinition($"{scheme}://guest:guest@localhost/");
+        [TestCase("amqp", 5672U, false)]
+        [TestCase("amqps", 5671U, true)]
+        public void Should_determine_if_tls_should_be_used_from_connection_string(string scheme, uint port, bool useTls)
+        {
+            var connectionConfiguration = CreateTransportDefinition($"{scheme}://guest:guest@localhost/");
 
-        //    Assert.AreEqual(connectionConfiguration.UseTls, useTls);
-        //    Assert.AreEqual(connectionConfiguration.Port, port);
-        //}
+            Assert.AreEqual(connectionConfiguration.UseTLS, useTls);
+        }
+
         [Test]
         public void Should_use_explicit_port_setting_over_scheme_default()
         {

@@ -98,6 +98,12 @@
                     }
                 }
 
+                if (dictionary.TryGetValue("certPath", out var certPath)
+                    && dictionary.TryGetValue("certPassphrase", out var passPhrase))
+                {
+                    transport.ClientCertificate = new X509Certificate2(certPath, passPhrase);
+                }
+
                 if (dictionary.TryGetValue("useTls", out var useTlsString))
                 {
                     if (!bool.TryParse(useTlsString, out var useTls))
@@ -105,13 +111,8 @@
                         throw new Exception($"'{useTlsString}' is not a valid value for the 'useTls' connection string option.");
                     }
 
-                    if (dictionary.TryGetValue("certPath", out var certPath)
-                        && dictionary.TryGetValue("certPassphrase", out var passPhrase))
-                    {
-                        transport.ClientCertificate = new X509Certificate2(certPath, passPhrase);
-                    }
+                    transport.UseTLS = useTls;
                 }
-
             };
         }
 

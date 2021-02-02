@@ -20,7 +20,7 @@ namespace NServiceBus.Transport.RabbitMQ
         readonly global::RabbitMQ.Client.ConnectionFactory connectionFactory;
         readonly object lockObject = new object();
 
-        public ConnectionFactory(string endpointName, string host, int port, string vhost, string userName, string password, X509Certificate2Collection clientCertificateCollection, bool validateRemoteCertificate, bool useExternalAuthMechanism, TimeSpan heartbeatInterval, TimeSpan networkRecoveryInterval)
+        public ConnectionFactory(string endpointName, string host, int port, string vhost, string userName, string password, bool useTls, X509Certificate2Collection clientCertificateCollection, bool validateRemoteCertificate, bool useExternalAuthMechanism, TimeSpan heartbeatInterval, TimeSpan networkRecoveryInterval)
         {
             if (endpointName is null)
             {
@@ -47,19 +47,16 @@ namespace NServiceBus.Transport.RabbitMQ
                 DispatchConsumersAsync = true
             };
 
-            if (clientCertificateCollection != null)
-            {
-                connectionFactory.Ssl.ServerName = host;
-                connectionFactory.Ssl.Certs = clientCertificateCollection;
-                connectionFactory.Ssl.Version = SslProtocols.Tls12;
-                connectionFactory.Ssl.Enabled = true;
+            connectionFactory.Ssl.ServerName = host;
+            connectionFactory.Ssl.Certs = clientCertificateCollection;
+            connectionFactory.Ssl.Version = SslProtocols.Tls12;
+            connectionFactory.Ssl.Enabled = useTls;
 
-                if (!validateRemoteCertificate)
-                {
-                    connectionFactory.Ssl.AcceptablePolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors |
-                                                                   SslPolicyErrors.RemoteCertificateNameMismatch |
-                                                                   SslPolicyErrors.RemoteCertificateNotAvailable;
-                }
+            if (!validateRemoteCertificate)
+            {
+                connectionFactory.Ssl.AcceptablePolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors |
+                                                               SslPolicyErrors.RemoteCertificateNameMismatch |
+                                                               SslPolicyErrors.RemoteCertificateNotAvailable;
             }
 
             if (useExternalAuthMechanism)

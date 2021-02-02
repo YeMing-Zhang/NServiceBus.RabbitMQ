@@ -46,7 +46,7 @@ class ConfigureRabbitMQTransportInfrastructure : IConfigureTransportInfrastructu
 
     static void PurgeQueues(DbConnectionStringBuilder connectionStringBuilder, string[] queues)
     {
-        if (connectionStringBuilder == null)
+        if (connectionStringBuilder == null || queues == null)
         {
             return;
         }

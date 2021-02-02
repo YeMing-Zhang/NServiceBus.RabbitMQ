@@ -17,6 +17,8 @@ namespace NServiceBus.Transport.RabbitMQ
                     transport.Port = uri.Port;
                 }
 
+                transport.UseTLS = uri.Scheme == "amqps";
+
                 if (!string.IsNullOrEmpty(uri.UserInfo))
                 {
                     var userPass = uri.UserInfo.Split(':');
