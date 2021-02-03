@@ -36,7 +36,7 @@
                 EndpointSetup<DefaultServer>(c =>
                 {
                     c.EnableFeature<StarterFeature>();
-                    ((RabbitMQTransport) c.ConfigureTransport()).MessageIdStrategy = m => customMessageId;
+                    c.ConfigureRabbitMQTransport().MessageIdStrategy = m => customMessageId;
                 });
             }
 

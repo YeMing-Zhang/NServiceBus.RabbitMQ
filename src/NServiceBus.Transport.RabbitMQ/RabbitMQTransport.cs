@@ -217,14 +217,14 @@ namespace NServiceBus
             if (hostSettings.SetupInfrastructure)
             {
                 var receivingAddresses = receivers.Select(x => x.ReceiveAddress).ToArray();
-                await CreateQueueIfNecessary(receivingAddresses, sendingAddresses, connectionFactory).ConfigureAwait(false);
+                await SetupInfrastructure(receivingAddresses, sendingAddresses, connectionFactory).ConfigureAwait(false);
             }
 
             return new RabbitMQTransportInfrastructure(hostSettings, receivers, connectionFactory,
                     routingTopology, channelProvider, converter, TimeToWaitBeforeTriggeringCircuitBreaker, PrefetchCountCalculation);
         }
 
-        Task CreateQueueIfNecessary(string[] receivingQueues, string[] sendingQueues, ConnectionFactory connectionFactory)
+        Task SetupInfrastructure(string[] receivingQueues, string[] sendingQueues, ConnectionFactory connectionFactory)
         {
             using (var connection = connectionFactory.CreateAdministrationConnection())
             using (var channel = connection.CreateModel())

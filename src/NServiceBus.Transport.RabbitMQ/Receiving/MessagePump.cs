@@ -51,9 +51,12 @@ namespace NServiceBus.Transport.RabbitMQ
             this.settings = settings;
             this.criticalErrorAction = criticalErrorAction;
 
-            Subscriptions = new SubscriptionManager(connectionFactory, routingTopology, settings.ReceiveAddress);
-            queuePurger = new QueuePurger(connectionFactory);
+            if (settings.UsePublishSubscribe)
+            {
+                Subscriptions = new SubscriptionManager(connectionFactory, routingTopology, settings.ReceiveAddress);
+            }
 
+            queuePurger = new QueuePurger(connectionFactory);
             circuitBreaker = new MessagePumpConnectionFailedCircuitBreaker($"'{settings.ReceiveAddress} MessagePump'", timeToWaitBeforeTriggeringCircuitBreaker, criticalErrorAction);
         }
 

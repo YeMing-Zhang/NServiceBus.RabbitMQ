@@ -5,7 +5,7 @@
 namespace NServiceBus
 {
 #pragma warning disable 618
-    static partial class RabbitMQTransportSettingsExtensions
+    public static class RabbitMQTransportSettingsExtensions
     {
         [ObsoleteEx(
             ReplacementTypeOrMember = "RabbitMQTransport.MessageIdStrategy",
